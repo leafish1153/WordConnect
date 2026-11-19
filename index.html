@@ -32,7 +32,15 @@
  .board{width:100%}.board button{font-size:clamp(15px,4.6vw,24px)}
  .feedback{margin:4px 6px 6px;font-size:14px;line-height:1.4}
 }
-</style></head><body><header><span class="mark">Wc</span> Word Connect <i>The Field Journal</i></header><main><div class="top"><small id="number"></small><select id="puzzle" aria-label="Choose puzzle"></select></div><h1>Word search</h1><p class="intro"><span class="mobile-intro">Tap both ends or drag across a word, even diagonally.</span><span class="desktop-intro">Tap the two ends of a word, or drag from one end to the other. Words run across, down or diagonally, in either direction.</span></p><div class="layout"><section class="paper" aria-label="Letter board"><div id="board" class="board"></div><p id="message" class="feedback" role="status"></p></section><aside><small id="progress"></small><h2>Find these words</h2><ul id="list" class="list"></ul><button id="next" hidden>Next puzzle</button></aside></div></main>
+
+#chick{display:grid;place-items:center;width:44px;height:44px;flex:none;border:1px solid #b8c2af;border-radius:50%;background:#fffdf6;cursor:pointer;font-size:24px;line-height:1}
+#chick[aria-pressed=true]{background:#fff0ac;border:2px solid #866624}
+#chick:focus-visible{outline:3px solid #285840;outline-offset:2px}
+.list .translated{text-decoration:none}
+.translated .entry{display:inline-block;vertical-align:middle}.translated .term{text-decoration:line-through}
+.meaning{display:block;color:#31493c;font-size:14px;font-weight:normal;letter-spacing:normal;line-height:1.45}
+@media(max-width:700px){.translated .entry{min-width:0;padding:4px 0}}
+</style></head><body><header><span class="mark">Wc</span> Word Connect <i>The Field Journal</i><button type="button" id="chick" aria-label="Chinese meanings for found words" aria-pressed="false" title="中文释义 · Chinese meanings">🐥</button></header><main><div class="top"><small id="number"></small><select id="puzzle" aria-label="Choose puzzle"></select></div><h1>Word search</h1><p class="intro"><span class="mobile-intro">Tap both ends or drag across a word, even diagonally.</span><span class="desktop-intro">Tap the two ends of a word, or drag from one end to the other. Words run across, down or diagonally, in either direction.</span></p><div class="layout"><section class="paper" aria-label="Letter board"><div id="board" class="board"></div><p id="message" class="feedback" role="status"></p></section><aside><small id="progress"></small><h2>Find these words</h2><ul id="list" class="list"></ul><button id="next" hidden>Next puzzle</button></aside></div></main>
 <script>
 const puzzles=[{"title": "Vocabulary study", "words": ["ALACRITY", "AUTONOMY", "CENSURE", "COHERENT", "CONCUR", "CYNICAL", "ECLECTIC", "NUANCE"], "grid": ["AQJSLETCIDCI", "NUKIDAOYKJIA", "STTGCHCGDRTE", "OMXOECZIDNCC", "ADSRNXNYNNEE", "MOEVJOSQAYLN", "FNZUNHMUYRCS", "TSXDZGNYMGEU", "EEUALACRITYR", "PDRWOAOPTDQE", "RUCNOCPQPLNR", "FAHCAOMODVWU"]}, {"title": "Birdwatching", "words": ["FEATHER", "ROBIN", "HERON", "FINCH", "FALCON", "NESTLING", "WARBLER", "SPARROW"], "grid": ["ANNCDENOCLAF", "KPSONGGKUVKW", "KNCUQZPMCGOS", "HFEATHERBRGD", "CGGIWYJJRWIF", "RTNDAIWAHHSH", "EOBIAZPUFHTJ", "LIBELSWIUEKT", "BXOIETNUIRRN", "RFFMNCSWDOWE", "AYSNHLHEDNTB", "WQGNFFCDNZJA"]}, {"title": "In the lab", "words": ["ORBITAL", "IONIC", "SOLUTE", "SOLVENT", "KINETIC", "PLASMA", "ENERGY", "ATOM"], "grid": ["ZQFQQHZAALSN", "CEZCITENIKYH", "HWBNXYNTOBKY", "RPWORBITALDG", "AULAEXCDZAOR", "FMRXKMPSSEFE", "IVSBPHCOYGGN", "VOZAVYLLYSXE", "CDNRLVPURMGM", "KERIEPNTJLOO", "QMKNCPMEITAC", "FWTWPAPCARTX"]}, {"title": "Night sky", "words": ["ORION", "COMET", "NEBULA", "VENUS", "GALAXY", "ECLIPSE", "METEOR", "LUNAR"], "grid": ["XULZCHNIBKRT", "FRVXNWEBSAAS", "IORIONBJNNGF", "EDSCQXUUYSBW", "KSTKOILFMJYU", "QEPIIMAVWFNB", "KRRIBNEIQJVQ", "NMOVLFJTSELM", "SAEJSCTRNRQN", "YVTQNCEUCOLD", "NYEMBGSQHMAD", "OGMYXALAGFAR"]}];
 const colors=['#b8dbc3','#ffd3a5','#c9d7ff','#efd0e0','#e6dda5','#b9e1e2','#e3c7ef','#cdddac'];
@@ -40,8 +48,24 @@ const byId=id=>document.getElementById(id);
 let saved={};try{saved=JSON.parse(localStorage.getItem('word-search-v1'))||{}}catch{}
 let current=Number.isInteger(saved.current)&&puzzles[saved.current]?saved.current:0;
 let results=puzzles.map((_,i)=>Array.isArray(saved.results?.[i])?saved.results[i]:[]);
+const meanings={
+ ALACRITY:'欣然；爽快', AUTONOMY:'自主权', CENSURE:'严厉批评；谴责', COHERENT:'连贯的；条理清楚的',
+ CONCUR:'同意；意见一致', CYNICAL:'愤世嫉俗的', ECLECTIC:'兼收并蓄的', NUANCE:'细微差别',
+ FEATHER:'羽毛', ROBIN:'知更鸟', HERON:'鹭', FINCH:'雀科鸟类', FALCON:'隼', NESTLING:'雏鸟', WARBLER:'莺', SPARROW:'麻雀',
+ ORBITAL:'原子轨道', IONIC:'离子的', SOLUTE:'溶质', SOLVENT:'溶剂', KINETIC:'与运动有关的', PLASMA:'等离子体', ENERGY:'能量', ATOM:'原子',
+ ORION:'猎户座', COMET:'彗星', NEBULA:'星云', VENUS:'金星', GALAXY:'星系', ECLIPSE:'日食或月食', METEOR:'流星', LUNAR:'月球的'
+};
+let showChinese=saved.showChinese===true;
+const chick=byId('chick');
+chick.setAttribute('aria-pressed',String(showChinese));
+chick.onclick=()=>{
+ showChinese=!showChinese;
+ chick.setAttribute('aria-pressed',String(showChinese));
+ persist();
+ renderResults();
+};
 let first=null;
-function persist(){try{localStorage.setItem('word-search-v1',JSON.stringify({current,results}))}catch{}}
+function persist(){try{localStorage.setItem('word-search-v1',JSON.stringify({current,results,showChinese}))}catch{}}
 function match(a,b){
  if(![a,b].every(i=>Number.isInteger(i)&&i>=0&&i<144)||a===b)return null;
  const dy=Math.floor(b/12)-Math.floor(a/12),dx=b%12-a%12;
@@ -81,7 +105,22 @@ function renderResults(){
  }
  byId('list').replaceChildren(...words.map(word=>{
   const li=document.createElement('li');li.textContent=word;
-  if(found.has(word)){li.className='done';li.ariaLabel=word+' found';return li}
+  if(found.has(word)){
+   li.className='done';
+   li.ariaLabel=word+' found';
+   if(showChinese){
+    li.classList.add('translated');
+    const entry=document.createElement('span');
+    entry.className='entry';
+    const term=document.createElement('span');
+    term.className='term';term.textContent=word;
+    const meaning=document.createElement('span');
+    meaning.className='meaning';meaning.lang='zh-Hans';meaning.textContent=meanings[word];
+    entry.append(term,meaning);li.replaceChildren(entry);
+    li.ariaLabel=word+' found, '+meanings[word];
+   }
+   return li;
+  }
   const hint=document.createElement('button');
   hint.className='hint';hint.textContent='Show';
   hint.setAttribute('aria-label','Reveal '+word+' and mark it found');

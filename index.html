@@ -3,6 +3,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f6f4eb;color:#203e33;font:16px "Trebuchet MS",sans-serif}main,header{width:min(100% - 32px,980px);margin:auto}header{padding:20px 0;border-bottom:1px solid #c3c8b9;font-weight:bold;display:flex;align-items:center;gap:10px}.mark{background:#244f3c;color:#fff5df;border-radius:6px;padding:7px}header i{margin-left:auto;font:italic 16px Georgia}h1{font:normal clamp(2.5rem,6vw,4.5rem)/1 Georgia;margin:12px 0}.intro{color:#4b5b4f}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px}small{letter-spacing:.11em}select,button{font:inherit;color:inherit}select{border:1px solid #bdc6b9;border-radius:6px;background:#fffdf6;padding:6px}.layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(205px,1fr);gap:22px;margin:20px 0}.paper,aside{padding:clamp(10px,2vw,24px);border-radius:14px;background:#fffdf6;border:1px solid #bec8b8}.board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));position:relative;isolation:isolate}.board button{aspect-ratio:1;padding:0;background:transparent;border:0;font:600 clamp(14px,2.7vw,23px) ui-monospace,monospace;cursor:pointer;touch-action:manipulation}.board button:focus-visible,.board button.first{outline:2px solid #2c654d;outline-offset:-2px;border-radius:50%;background:#e3edda}.board svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:-1}h2{font:normal 32px Georgia;margin:10px 0}.list{list-style:none;padding:0;margin:12px 0;display:grid;gap:3px}.list li{padding:7px 0;border-bottom:1px solid #e2e5d8;font-weight:bold;letter-spacing:.04em}.list li:before{content:'○';margin-right:10px;color:#657a68}.list .done{text-decoration:line-through;color:#566d59}.list .done:before{content:'✓'}.feedback{min-height:1.5em;margin:14px 0 0;color:#285840}#next{background:#234f3c;color:white;border:0;border-radius:20px;padding:9px 18px;cursor:pointer}@media(max-width:640px){.layout{grid-template-columns:1fr;gap:10px}.list{grid-template-columns:repeat(2,1fr);column-gap:10px}.top{margin-top:15px}.paper,aside{padding:10px}header{padding:12px 0}.intro{margin:8px 0}.layout{margin-top:12px}.board button{font-size:clamp(14px,4vw,21px)}}
 .board,.board button{touch-action:none;user-select:none;-webkit-user-select:none}.board svg{overflow:visible}
+.hint {float:right;margin:0 3px;padding:2px 8px;border:1px solid #738675;border-radius:6px;background:#fffdf6;color:#284e3b;font-family:inherit;font-size:14px;cursor:pointer}.hint[aria-pressed=true]{border-color:#944a18;color:#833b0b}.list li{display:flow-root}
 </style></head><body><header><span class="mark">Wc</span> Word Connect <i>The Field Journal</i></header><main><div class="top"><small id="number"></small><select id="puzzle" aria-label="Choose puzzle"></select></div><h1>Word search</h1><p class="intro">Tap the two ends of a word, or drag from one end to the other. Words run across, down or diagonally, in either direction.</p><div class="layout"><section class="paper" aria-label="Letter board"><div id="board" class="board"></div><p id="message" class="feedback" role="status"></p></section><aside><small id="progress"></small><h2>Find these words</h2><ul id="list" class="list"></ul><button id="next" hidden>Next puzzle</button></aside></div></main>
 <script>
 const puzzles=[{"title": "Vocabulary study", "words": ["ALACRITY", "AUTONOMY", "CENSURE", "COHERENT", "CONCUR", "CYNICAL", "ECLECTIC", "NUANCE"], "grid": ["AQJSLETCIDCI", "NUKIDAOYKJIA", "STTGCHCGDRTE", "OMXOECZIDNCC", "ADSRNXNYNNEE", "MOEVJOSQAYLN", "FNZUNHMUYRCS", "TSXDZGNYMGEU", "EEUALACRITYR", "PDRWOAOPTDQE", "RUCNOCPQPLNR", "FAHCAOMODVWU"]}, {"title": "Birdwatching", "words": ["FEATHER", "ROBIN", "HERON", "FINCH", "FALCON", "NESTLING", "WARBLER", "SPARROW"], "grid": ["ANNCDENOCLAF", "KPSONGGKUVKW", "KNCUQZPMCGOS", "HFEATHERBRGD", "CGGIWYJJRWIF", "RTNDAIWAHHSH", "EOBIAZPUFHTJ", "LIBELSWIUEKT", "BXOIETNUIRRN", "RFFMNCSWDOWE", "AYSNHLHEDNTB", "WQGNFFCDNZJA"]}, {"title": "In the lab", "words": ["ORBITAL", "IONIC", "SOLUTE", "SOLVENT", "KINETIC", "PLASMA", "ENERGY", "ATOM"], "grid": ["ZQFQQHZAALSN", "CEZCITENIKYH", "HWBNXYNTOBKY", "RPWORBITALDG", "AULAEXCDZAOR", "FMRXKMPSSEFE", "IVSBPHCOYGGN", "VOZAVYLLYSXE", "CDNRLVPURMGM", "KERIEPNTJLOO", "QMKNCPMEITAC", "FWTWPAPCARTX"]}, {"title": "Night sky", "words": ["ORION", "COMET", "NEBULA", "VENUS", "GALAXY", "ECLIPSE", "METEOR", "LUNAR"], "grid": ["XULZCHNIBKRT", "FRVXNWEBSAAS", "IORIONBJNNGF", "EDSCQXUUYSBW", "KSTKOILFMJYU", "QEPIIMAVWFNB", "KRRIBNEIQJVQ", "NMOVLFJTSELM", "SAEJSCTRNRQN", "YVTQNCEUCOLD", "NYEMBGSQHMAD", "OGMYXALAGFAR"]}];
@@ -21,6 +22,27 @@ function match(a,b){
  for(let i=0;i<=Math.max(Math.abs(dx),Math.abs(dy));i++)text+=grid[Math.floor(a/12)+i*Math.sign(dy)][a%12+i*Math.sign(dx)];
  return puzzles[current].words.find(w=>w===text||w===[...text].reverse().join(''))||null;
 }
+let hintedWord=null;
+function locate(word){
+ const grid=puzzles[current].grid;
+ for(let row=0;row<12;row++)for(let col=0;col<12;col++){
+  if(grid[row][col]!==word[0])continue;
+  for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1],[-1,0],[0,-1],[-1,1],[-1,-1]]){
+   if([...word].every((letter,i)=>grid[row+i*dy]?.[col+i*dx]===letter)){
+    return {row,col,dx,dy};
+   }
+  }
+ }
+}
+function drawHint(word){
+ const {row,col,dx,dy}=locate(word);
+ const outline=document.createElementNS('http://www.w3.org/2000/svg','rect');
+ const length=(word.length-1)*Math.hypot(dx,dy);
+ const attrs={x:-.4,y:-.4,width:length+.8,height:.8,rx:.4,fill:'none',stroke:'#944a18','stroke-width':.075,
+  transform:'translate('+(col+.5)+' '+(row+.5)+') rotate('+Math.atan2(dy,dx)*180/Math.PI+')'};
+ for(const [key,value] of Object.entries(attrs))outline.setAttribute(key,value);
+ byId('marks').append(outline);
+}
 function renderResults(){
  const words=puzzles[current].words,found=new Set(),lines=byId('marks');lines.replaceChildren();
  for(const pair of results[current]){
@@ -29,7 +51,23 @@ function renderResults(){
   for(const [key,value] of Object.entries({x1:a%12+.5,y1:Math.floor(a/12)+.5,x2:b%12+.5,y2:Math.floor(b/12)+.5,stroke:colors[words.indexOf(word)],'stroke-width':.68,'stroke-linecap':'round'}))line.setAttribute(key,value);
   lines.append(line);
  }
- byId('list').replaceChildren(...words.map(w=>{const li=document.createElement('li');li.textContent=w;if(found.has(w)){li.className='done';li.ariaLabel=w+' found'}return li}));
+ if(found.has(hintedWord))hintedWord=null;
+ if(hintedWord)drawHint(hintedWord);
+ byId('list').replaceChildren(...words.map(word=>{
+  const li=document.createElement('li');li.textContent=word;
+  if(found.has(word)){li.className='done';li.ariaLabel=word+' found';return li}
+  const hint=document.createElement('button');
+  hint.className='hint';hint.textContent=hintedWord===word?'Hide':'Show';
+  hint.setAttribute('aria-label',hint.textContent+' location of '+word);
+  hint.setAttribute('aria-pressed',String(hintedWord===word));
+  hint.onclick=()=>{
+   hintedWord=hintedWord===word?null:word;
+   renderResults();
+   byId('list').querySelectorAll('li')[words.indexOf(word)].querySelector('button').focus({preventScroll:true});
+   byId('message').textContent=hintedWord?word+' is outlined on the board.':'Location hidden.';
+  };
+  li.append(hint);return li;
+ }));
  byId('progress').textContent=found.size+' / '+words.length+' FOUND';byId('next').hidden=found.size!==words.length;
  return found.size===words.length;
 }
@@ -95,7 +133,7 @@ function pick(i){
  results[current].push([a,i]);persist();message.textContent=renderResults()?'All words found!':word+' found!';
 }
 function openPuzzle(i){
- clearGesture();current=i;first=null;byId('puzzle').value=i;byId('number').textContent='PUZZLE '+(i+1)+' / '+puzzles.length;
+ clearGesture();hintedWord=null;current=i;first=null;byId('puzzle').value=i;byId('number').textContent='PUZZLE '+(i+1)+' / '+puzzles.length;
  const board=byId('board');board.innerHTML='<svg id="marks" viewBox="0 0 12 12" preserveAspectRatio="none" aria-hidden="true"></svg>';
  [...puzzles[i].grid.join('')].forEach((letter,k)=>{const button=document.createElement('button');button.textContent=letter;button.ariaLabel=letter+', row '+(Math.floor(k/12)+1)+', column '+(k%12+1);button.dataset.cell=k;button.onclick=event=>{if(event.detail===0)pick(k)};board.append(button)});
  byId('message').textContent=renderResults()?'All words found!':'Choose a word from the list and find its first letter.';persist();

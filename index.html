@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Connect · The Field Journal</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f3e8;color:#203f32;font:16px "Trebuchet MS",sans-serif}header,main,footer{max-width:980px;margin:auto;padding:20px 5%}header{display:flex;align-items:center;gap:12px;border-bottom:1px solid #b9c0af;font-weight:bold}header span{margin-left:auto;font:italic 16px Georgia}header b{background:#245540;color:white;padding:8px;border-radius:4px}h1{font:normal clamp(40px,8vw,76px)/1 Georgia;margin:15px 0}h2{font:normal 28px Georgia;margin:0 0 20px}.game{display:grid;grid-template-columns:1fr 1fr;border:1px solid #b9c0af;border-radius:18px;overflow:hidden;margin-top:25px}.garden{background:#1e503e;color:#fff5d9;text-align:center;padding:20px;background-image:radial-gradient(#ffffff16 1px,transparent 1px);background-size:11px 11px}.wheel{position:relative;width:min(100%,260px);aspect-ratio:1;margin:auto;border:1px dashed #a2b597;border-radius:50%;touch-action:none;user-select:none}.wheel button{position:absolute;transform:translate(-50%,-50%);background:#fff3cb;border:0;border-radius:50%;color:#193d2d;width:22%;height:22%;font:bold 32px Georgia;box-shadow:0 3px 0 #193d2d}.wheel button.active{background:#ffa66d}.wheel svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}button{cursor:pointer}.controls button,#next{padding:9px 15px;border:1px solid currentColor;border-radius:22px;color:inherit;background:transparent;font:inherit}.controls{display:flex;gap:10px;justify-content:center}#status{min-height:24px}.page{padding:26px;background:#fffdf5}.row{display:flex;gap:5px;margin-bottom:9px}.tile{width:32px;height:32px;border-radius:4px;background:#eae8da;text-align:center;line-height:32px;font-weight:bold}.solved .tile{background:#d6e5cc}small{letter-spacing:.12em}footer{font:italic 16px Georgia}#next{margin-top:12px}button:focus-visible{outline:3px solid #e08640;outline-offset:3px}@media(max-width:630px){.game{grid-template-columns:1fr}.wheel{width:205px}.page{padding:20px}.garden{padding:16px}.row{margin-bottom:5px}header,main,footer{padding:15px 5%}}
+</style>
+<header><b>Wc</b> Word Connect <span>The Field Journal</span></header>
+<main><small id="level"></small><h1 id="title"></h1><p>Drag through the letters to find the hidden words.</p>
+<div class="game"><section class="garden"><div class="wheel" id="wheel" aria-label="Letter wheel"></div><p id="status" aria-live="polite">Trace a word to begin.</p><div class="controls"><button id="shuffle">Shuffle</button><button id="hint">Hint</button></div></section>
+<section class="page"><small id="count"></small><h2>Word collection</h2><div id="words"></div><button id="next" hidden></button></section></div></main><footer>Keyboard play · Type a word and press Enter.</footer>
+<script>
+const puzzles=[
+ ['Clover meadow','SLATE',['ATE','SEA','TEA','EAST','SEAL','SLATE']],
+ ['Orchard path','PEARS',['APE','EAR','SEA','PEAR','SPARE','SPEAR']],
+ ['Fern hollow','STONE',['NET','ONE','TEN','NEST','TONE','STONE']],
+ ['Willow brook','STREAM',['ARM','TEA','TEAM','STEAM','MASTER','STREAM']]
+];
+const el=id=>document.getElementById(id);
+let saved={};try{saved=JSON.parse(localStorage.getItem('fieldjournal-v1'))||{}}catch{}
+let index=Number.isInteger(saved.index)&&puzzles[saved.index]?saved.index:0;
+let found=new Set(puzzles[index][2].filter(w=>saved.found?.includes(w)));
+let letters=[],path=[],points=[],pointer=null;
+function save(){try{localStorage.setItem('fieldjournal-v1',JSON.stringify({index,found:[...found]}))}catch{}}
+function drawWords(){
+ const targets=puzzles[index][2];el('words').replaceChildren();
+ for(const word of targets){const row=document.createElement('div');row.className='row'+(found.has(word)?' solved':'');row.ariaLabel=found.has(word)?word:word.length+' letter word';
+ for(const c of word){const tile=document.createElement('span');tile.className='tile';tile.textContent=found.has(word)?c:'·';row.append(tile)}el('words').append(row)}
+ el('count').textContent=found.size+' / '+targets.length+' FOUND';el('next').hidden=found.size!==targets.length;el('next').textContent=index===puzzles.length-1?'Play again':'Next puzzle';
+}
+function paint(){const buttons=[...el('wheel').querySelectorAll('button')];buttons.forEach((b,i)=>b.classList.toggle('active',path.includes(i)));el('line').setAttribute('points',path.map(i=>points[i].join(',')).join(' '))}
+function choose(i){if(i<0||path.includes(i))return;path.push(i);paint();el('status').textContent=path.map(n=>letters[n]).join('')}
+function submit(){if(!path.length)return;const word=path.map(n=>letters[n]).join('');let message='Try another word.';
+ if(found.has(word))message=word+' is already in your collection.';
+ else if(puzzles[index][2].includes(word)){found.add(word);save();drawWords();message=found.size===puzzles[index][2].length?'Collection complete!':word+' found!'}
+ path=[];paint();el('status').textContent=message}
+function drawWheel(){path=[];points=[];const wheel=el('wheel');wheel.innerHTML='<svg viewBox="0 0 100 100" aria-hidden="true"><polyline id="line" fill="none" stroke="#ffa66d" stroke-width="3" stroke-linejoin="round"/></svg>';
+ letters.forEach((letter,i)=>{const angle=2*Math.PI*i/letters.length-Math.PI/2;const x=50+36*Math.cos(angle),y=50+36*Math.sin(angle);points.push([x,y]);const b=document.createElement('button');b.textContent=letter;b.style.left=x+'%';b.style.top=y+'%';b.dataset.i=i;b.onclick=e=>{if(e.detail===0)choose(i)};wheel.append(b)})}
+function start(){letters=[...puzzles[index][1]];el('level').textContent='FIELD JOURNAL  /  PUZZLE '+String(index+1).padStart(2,'0');el('title').textContent=puzzles[index][0];drawWheel();drawWords();el('status').textContent='Trace a word to begin.'}
+const wheel=el('wheel');function hit(e){const b=document.elementFromPoint(e.clientX,e.clientY)?.closest('button[data-i]');if(b)choose(Number(b.dataset.i))}
+wheel.onpointerdown=e=>{if(pointer!==null||!e.target.closest('button'))return;pointer=e.pointerId;path=[];wheel.setPointerCapture(pointer);hit(e)};
+wheel.onpointermove=e=>{if(e.pointerId===pointer)hit(e)};wheel.onpointerup=e=>{if(e.pointerId===pointer){pointer=null;submit()}};wheel.onpointercancel=()=>{pointer=null;path=[];paint();el('status').textContent='Trace a word to begin.'};
+document.onkeydown=e=>{if(e.ctrlKey||e.altKey||e.metaKey||pointer!==null)return;if(e.key==='Enter'&&path.length){e.preventDefault();submit()}else if(e.key==='Backspace'||e.key==='Escape'){e.preventDefault();if(e.key==='Escape')path=[];else path.pop();paint();el('status').textContent=path.map(i=>letters[i]).join('')||'Trace a word to begin.'}else if(/^[a-z]$/i.test(e.key))choose(letters.findIndex((c,i)=>c===e.key.toUpperCase()&&!path.includes(i)))};
+el('shuffle').onclick=()=>{letters.push(letters.shift());drawWheel();el('status').textContent='Letters rearranged.'};
+el('hint').onclick=()=>{const w=puzzles[index][2].find(w=>!found.has(w));el('status').textContent=w?'Find a '+w.length+'-letter word starting with '+w[0]+'.':'Collection complete!'};
+el('next').onclick=()=>{index=(index+1)%puzzles.length;found.clear();save();start()};start();
+</script></html>
